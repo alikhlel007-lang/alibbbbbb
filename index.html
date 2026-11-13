@@ -1,0 +1,2399 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="المنيو الذكي">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0F0D0C">
+  <link rel="manifest" href="manifest.json">
+  <title>المنيو الإلكتروني الذكي | كافيه</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Firebase Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #0F0D0C;
+      --bg-card: #181412;
+      --bg-card-border: #2C2420;
+      --accent: #F7A038;
+      --accent-glow: rgba(247, 160, 56, 0.35);
+      --accent-hover: #FFAF54;
+      --text-main: #FFFFFF;
+      --text-sub: #A89B91;
+      --text-dim: #736760;
+      --danger: #EF4444;
+      --success: #10B981;
+      --surface: #201A17;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Cairo', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding-bottom: 110px;
+    }
+
+    /* Top Sticky Header */
+    .top-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 13, 12, 0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--bg-card-border);
+      padding: 12px 16px;
+    }
+
+    .header-content {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .cafe-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cafe-brand img {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 1.5px solid var(--accent);
+    }
+
+    .cafe-brand-info h1 {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .cafe-brand-info p {
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .table-pill {
+      background: #251D18;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+
+    .btn-icon-action {
+      background: #251D18;
+      border: 1px solid var(--bg-card-border);
+      color: var(--text-sub);
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+    .btn-icon-action:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Container */
+    .main-container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 14px 16px;
+    }
+
+    /* Quick Service Bar */
+    .service-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .btn-service {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #1C1714;
+      border: 1px solid var(--bg-card-border);
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-service:active {
+      transform: scale(0.97);
+    }
+    .btn-service i {
+      color: var(--accent);
+    }
+    .btn-service.active {
+      background: var(--accent);
+      color: #0F0D0C;
+      border-color: var(--accent);
+      font-weight: 800;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+    .btn-service.active i {
+      color: #0F0D0C !important;
+    }
+
+    /* Search & Categories */
+    .search-box {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .search-box i {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 15px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 42px 10px 14px;
+      background: #1C1714;
+      border: 1.5px solid var(--bg-card-border);
+      border-radius: 14px;
+      color: var(--text-main);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .categories-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+      scrollbar-width: none;
+    }
+    .categories-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .cat-btn {
+      padding: 7px 16px;
+      border-radius: 20px;
+      background: #181412;
+      border: 1px solid var(--bg-card-border);
+      color: var(--text-sub);
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .cat-btn.active {
+      background: var(--accent);
+      color: #0F0D0C;
+      border-color: var(--accent);
+      font-weight: 800;
+      box-shadow: 0 3px 12px var(--accent-glow);
+    }
+
+    /* Items List */
+    .items-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .item-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      transition: border-color 0.2s;
+    }
+    .item-card:hover {
+      border-color: #3D322B;
+    }
+
+    .item-img-wrap {
+      width: 82px;
+      height: 82px;
+      border-radius: 14px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: #251D18;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .item-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .item-img-wrap .item-img-placeholder {
+      font-size: 28px;
+      color: var(--accent);
+    }
+
+    .item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .item-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+    }
+
+    .item-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .item-price {
+      font-size: 15px;
+      font-weight: 900;
+      color: var(--accent);
+    }
+
+    .badge-gallery-count {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      background: rgba(0,0,0,0.8);
+      border: 0.8px solid var(--accent);
+      color: var(--accent);
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 6px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .item-details-link {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .item-details-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Item Details & Gallery Modal */
+    .details-modal-body {
+      max-height: 80vh;
+      overflow-y: auto;
+      padding-bottom: 20px;
+    }
+    .gallery-viewer {
+      width: 100%;
+      height: 260px;
+      max-height: 45vh;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #0D0A08;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--bg-card-border);
+      margin-bottom: 12px;
+    }
+    .gallery-viewer img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 10px;
+      image-rendering: -webkit-optimize-contrast;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .gallery-counter-pill {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .gallery-thumbs-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      margin-bottom: 12px;
+    }
+    .gallery-thumb {
+      width: 62px;
+      height: 62px;
+      border-radius: 10px;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 2px solid transparent;
+      cursor: pointer;
+      opacity: 0.65;
+      background: #251D18;
+      transition: all 0.2s;
+    }
+    .gallery-thumb.active {
+      border-color: var(--accent);
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    .gallery-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .details-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-left: 6px;
+      margin-bottom: 8px;
+    }
+    .details-badge.cat {
+      background: rgba(245,158,11,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(245,158,11,0.3);
+    }
+    .details-badge.offer {
+      background: #F59E0B;
+      color: #000;
+    }
+    .details-badge.discount {
+      background: rgba(239,68,68,0.2);
+      color: #F87171;
+      border: 1px solid rgba(239,68,68,0.4);
+    }
+
+    /* DIRECT STEPPER (+ / -) ON EVERY CARD */
+    .card-stepper {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #0D0B0A;
+      border: 1.5px solid var(--bg-card-border);
+      border-radius: 24px;
+      padding: 3px 6px;
+    }
+
+    .btn-step {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 900;
+      cursor: pointer;
+      line-height: 1;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn-step:active {
+      transform: scale(0.9);
+    }
+
+    .btn-step-minus {
+      background: var(--danger);
+      color: #FFFFFF;
+    }
+
+    .btn-step-plus {
+      background: var(--accent);
+      color: #0F0D0C;
+    }
+
+    .card-qty-label {
+      color: #FFFFFF !important;
+      font-weight: 900;
+      font-size: 15px;
+      min-width: 24px;
+      text-align: center;
+      user-select: none;
+    }
+
+    /* Floating Cart Bar */
+    .floating-cart-bar {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      max-width: 648px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #1C1714 0%, #291F1A 100%);
+      border: 1.8px solid var(--accent);
+      border-radius: 18px;
+      padding: 12px 18px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 20px var(--accent-glow);
+      z-index: 500;
+      cursor: pointer;
+    }
+
+    .cart-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cart-badge {
+      background: var(--accent);
+      color: #0F0D0C;
+      font-weight: 900;
+      font-size: 14px;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .cart-bar-total {
+      font-size: 16px;
+      font-weight: 900;
+      color: #FFFFFF;
+    }
+
+    .cart-bar-btn {
+      background: var(--accent);
+      color: #0F0D0C;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Modals / Sheets */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .sheet-card {
+      background: #181412;
+      border-top: 2px solid var(--accent);
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      max-width: 600px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+      animation: slideUp 0.25s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--bg-card-border);
+    }
+
+    .sheet-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-close-sheet {
+      background: #251D18;
+      border: none;
+      color: var(--text-sub);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .sheet-body {
+      overflow-y: auto;
+      flex: 1;
+      padding-bottom: 16px;
+    }
+
+    .cart-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .cart-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1F1916;
+      border: 1px solid var(--bg-card-border);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    .cart-row-info h4 {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+    .cart-row-info span {
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .input-group {
+      margin-bottom: 14px;
+    }
+
+    .input-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .sheet-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #13100E;
+      border: 1.5px solid var(--bg-card-border);
+      border-radius: 12px;
+      color: var(--text-main);
+      font-size: 14px;
+      outline: none;
+    }
+    .sheet-input:focus {
+      border-color: var(--accent);
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-top: 1px dashed var(--bg-card-border);
+      margin-bottom: 16px;
+    }
+    .total-row span {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-sub);
+    }
+    .total-row strong {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--accent);
+    }
+
+    .btn-submit-order {
+      width: 100%;
+      padding: 14px;
+      border-radius: 16px;
+      background: var(--accent);
+      border: none;
+      color: #0F0D0C;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 20px var(--accent-glow);
+      transition: transform 0.1s;
+    }
+    .btn-submit-order:active {
+      transform: scale(0.98);
+    }
+
+    /* Success / Tracking Dialog */
+    .center-dialog {
+      background: #181412;
+      border: 2px solid var(--accent);
+      border-radius: 24px;
+      padding: 24px;
+      width: 90%;
+      max-width: 440px;
+      text-align: center;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+      margin: auto;
+    }
+
+    .success-icon-wrap {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(247, 160, 56, 0.15);
+      border: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 14px;
+      color: var(--accent);
+      font-size: 30px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 14px;
+      margin: 14px 0;
+    }
+    .status-badge.new {
+      background: #2B2117;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    .status-badge.prep {
+      background: #1F2937;
+      color: #60A5FA;
+      border: 1px solid #3B82F6;
+    }
+    .status-badge.ready {
+      background: #064E3B;
+      color: #34D399;
+      border: 1px solid #10B981;
+    }
+
+    /* Toast */
+    .toast-box {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #251D18;
+      border: 1.5px solid var(--accent);
+      color: #FFFFFF;
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 800;
+      z-index: 2000;
+      display: none;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+      white-space: nowrap;
+    }
+
+    /* Orders History Styles */
+    .order-history-card {
+      background: #1C1714;
+      border: 1px solid var(--bg-card-border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .order-history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px dashed #2E2621;
+    }
+    .order-history-id {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .order-history-time {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .order-history-items {
+      font-size: 12px;
+      color: var(--text-main);
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    .order-history-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #FFFFFF;
+      padding-top: 6px;
+      border-top: 1px solid #28211C;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toast Notification -->
+  <div id="toastBox" class="toast-box"></div>
+
+
+
+  <!-- Main Content Container -->
+  <div class="main-container">
+    
+    <!-- Quick Action Navigation Tabs -->
+    <div class="service-bar">
+      <button class="btn-service active" id="tabMenuBtn" onclick="switchMainTab('MENU')">
+        <i class="fa-solid fa-utensils"></i>
+        <span>قائمة الطلب</span>
+      </button>
+      <button class="btn-service" id="tabOffersBtn" onclick="switchMainTab('OFFERS')">
+        <i class="fa-solid fa-fire"></i>
+        <span>العروض</span>
+      </button>
+      <button class="btn-service" id="tabGameBtn" onclick="openGameModal()">
+        <i class="fa-solid fa-table-list"></i>
+        <span>تسجيل النقاط</span>
+      </button>
+    </div>
+
+    <!-- Search Input -->
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="searchInput" class="search-input" placeholder="ابحث عن قهوة، حلى، عصير..." oninput="filterMenuItems()">
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="categories-scroll" id="categoryTabs">
+      <button class="cat-btn active" onclick="selectCategory('ALL')">✨ الكل</button>
+    </div>
+
+    <!-- Menu Items List -->
+    <div class="items-grid" id="itemsList">
+      <div style="text-align:center; padding: 40px 0; color: var(--text-dim);">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size:28px; color:var(--accent);"></i>
+        <p style="margin-top:10px; font-weight:700;">جاري تحميل قائمة المنيو...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Floating Cart Bar -->
+  <div class="floating-cart-bar" id="floatingCart" onclick="openCartModal()">
+    <div class="cart-bar-left">
+      <span class="cart-badge" id="cartBadgeCount">0</span>
+      <span class="cart-bar-total" id="cartBarTotal">0 د.ع</span>
+    </div>
+    <button class="cart-bar-btn">
+      <span>عرض السلة وإتمام الطلب</span>
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
+  </div>
+
+
+  <!-- Item Details & Multi-Image Gallery Modal (تفاصيل ومزيد من الصور للصنف) -->
+  <div class="modal-overlay" id="itemDetailsModal">
+    <div class="sheet-card" style="max-height: 88vh; display:flex; flex-direction:column;">
+      <div class="sheet-header">
+        <div class="sheet-title">
+          <i class="fa-solid fa-circle-info" style="color:var(--accent);"></i>
+          <span id="detailsTitle">تفاصيل ومزيد من الصور</span>
+        </div>
+        <button class="btn-close-sheet" onclick="closeItemDetailsModal()">&times;</button>
+      </div>
+
+      <div class="sheet-body details-modal-body" style="flex:1; overflow-y:auto;">
+        <!-- Featured Gallery Main Viewer -->
+        <div class="gallery-viewer" id="detailsGalleryViewer">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Thumbnails Row -->
+        <div class="gallery-thumbs-row" id="detailsThumbsRow">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Badges (Category + Offer + Discount) -->
+        <div id="detailsBadges" style="margin-bottom:6px;"></div>
+
+        <!-- Price -->
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <span style="font-size:13px; color:var(--text-dim); font-weight:700;">السعر:</span>
+          <span id="detailsPrice" style="font-size:20px; font-weight:900; color:var(--accent);">0 د.ع</span>
+        </div>
+
+        <!-- Description -->
+        <div style="background:#181412; border:1px solid var(--bg-card-border); border-radius:12px; padding:12px; margin-bottom:16px;">
+          <h4 style="font-size:12px; font-weight:800; color:var(--text-dim); margin-bottom:6px;">الوصف والتفاصيل:</h4>
+          <p id="detailsDesc" style="font-size:13px; color:var(--text-main); line-height:1.6; margin:0;"></p>
+        </div>
+
+        <!-- Stepper / Add to Cart Action Row -->
+        <div id="detailsActionRow" style="margin-top:8px;">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cart Modal / Bottom Sheet -->
+  <div class="modal-overlay" id="cartModal">
+    <div class="sheet-card">
+      <div class="sheet-header">
+        <div class="sheet-title">
+          <i class="fa-solid fa-bag-shopping" style="color:var(--accent);"></i>
+          <span>سلة الطلب</span>
+        </div>
+        <button class="btn-close-sheet" onclick="closeCartModal()">&times;</button>
+      </div>
+
+      <div class="sheet-body">
+        <div class="cart-items-list" id="cartItemsList">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">اسمك الكريم (مطلوب للكاشير):</label>
+          <input type="text" id="customerName" class="sheet-input" placeholder="اكتب اسمك هنا (مثال: علي، أحمد)..." maxlength="30">
+          <div id="nameError" style="color:var(--danger); font-size:12px; font-weight:700; margin-top:4px; display:none;">
+            ⚠️ يرجى كتابة اسمك أولاً لإرسال الطلب إلى الكاشير
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <i class="fa-brands fa-whatsapp" style="color:#25D366; margin-left:4px;"></i>
+            رقم الهاتف (واتساب) لاستلام الفاتورة:
+          </label>
+          <input type="tel" id="customerPhone" class="sheet-input" placeholder="مثال: 07801234567 (اختياري)" maxlength="20" dir="ltr" style="text-align:right;">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">ملاحظات للمطبخ (اختياري):</label>
+          <input type="text" id="orderNotes" class="sheet-input" placeholder="مثال: بدون سكر، حار زيادة...">
+        </div>
+
+        <div class="total-row" style="margin-bottom:8px;">
+          <span>المجموع الإجمالي:</span>
+          <strong id="modalTotalPrice">0 د.ع</strong>
+        </div>
+
+        <div style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.35); border-radius:10px; padding:8px 12px; margin-bottom:14px; display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:#FDE68A;">
+          <i class="fa-solid fa-circle-info" style="color:var(--accent); font-size:14px;"></i>
+          <span>ستضاف رسوم الخدمة الى الطلب (1٪)</span>
+        </div>
+
+        <button class="btn-submit-order" onclick="submitOrder()">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>إرسال الطلب إلى الكاشير الآن</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Success & Tracking Modal -->
+  <div class="modal-overlay" id="trackingModal" style="align-items:center;">
+    <div class="center-dialog">
+      <div class="success-icon-wrap">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <h2 style="font-size:20px; font-weight:900; margin-bottom:6px;">تم إرسال طلبك بنجاح!</h2>
+      <p style="font-size:13px; color:var(--text-sub);" id="trackingSubtext">وصل طلبك للكاشير ويجري تحضيره الآن.</p>
+      
+      <div class="status-badge new" id="orderStatusBadge">🕒 طلب جديد في الانتظار</div>
+      
+      <div style="font-size:12px; color:var(--text-dim); margin-bottom:18px;" id="orderIdText">رقم الطلب: #---</div>
+
+      <button class="btn-submit-order" style="padding:10px; font-size:14px;" onclick="closeTrackingModal()">
+        <span>موافق، العودة للمنيو</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Card Game Score Sheet Modal -->
+  <div class="modal-overlay" id="gameModal" style="align-items:flex-end;">
+    <div class="sheet-card" style="max-height:90vh; display:flex; flex-direction:column; max-width:480px;">
+      <div class="sheet-header" style="margin-bottom:8px;">
+        <div class="sheet-title">
+          <i class="fa-solid fa-clone" style="color:var(--accent);"></i>
+          <span>تسجيل نقاط لعبة الورق</span>
+        </div>
+        <button class="btn-close-sheet" onclick="closeGameModal()">&times;</button>
+      </div>
+
+      <div class="sheet-body" style="overflow-y:auto; flex:1; padding-bottom:14px;">
+        
+        <!-- 2-Column Table for Card Game -->
+        <div style="background:#15110E; border:1.5px solid var(--bg-card-border); border-radius:14px; overflow:hidden; margin-bottom:12px;">
+          <!-- Team Header Row -->
+          <div style="display:flex; background:#1C1714; border-bottom:1.5px solid #2B221C; text-align:center;">
+            <!-- Team 1 Header -->
+            <div style="flex:1; padding:10px 8px; border-left:1px solid #2B221C;">
+              <input type="text" id="gameTeam1Name" value="الفريق الأول"
+                onfocus="clearTeamDefaultName(this, 'الفريق الأول')"
+                onclick="clearTeamDefaultName(this, 'الفريق الأول')"
+                onblur="restoreTeamDefaultName(this, 'الفريق الأول')"
+                oninput="updateScoresView()"
+                style="width:100%; background:transparent; border:none; border-bottom:1.5px dashed var(--accent); color:var(--accent); font-weight:800; font-size:14px; text-align:center; padding:3px; outline:none;" placeholder="اسم الفريق الأول">
+              <div id="scoreTeam1" style="font-size:28px; font-weight:900; color:#FFFFFF; margin:4px 0 2px 0;">0</div>
+              <div style="font-size:10px; color:var(--text-dim);">المجموع الكلي</div>
+            </div>
+
+            <!-- Team 2 Header -->
+            <div style="flex:1; padding:10px 8px;">
+              <input type="text" id="gameTeam2Name" value="الفريق الثاني"
+                onfocus="clearTeamDefaultName(this, 'الفريق الثاني')"
+                onclick="clearTeamDefaultName(this, 'الفريق الثاني')"
+                onblur="restoreTeamDefaultName(this, 'الفريق الثاني')"
+                oninput="updateScoresView()"
+                style="width:100%; background:transparent; border:none; border-bottom:1.5px dashed #3B82F6; color:#60A5FA; font-weight:800; font-size:14px; text-align:center; padding:3px; outline:none;" placeholder="اسم الفريق الثاني">
+              <div id="scoreTeam2" style="font-size:28px; font-weight:900; color:#FFFFFF; margin:4px 0 2px 0;">0</div>
+              <div style="font-size:10px; color:var(--text-dim);">المجموع الكلي</div>
+            </div>
+          </div>
+
+          <!-- Score Difference Banner -->
+          <div id="scoreDiffBanner" style="background:#1B1512; border-bottom:1px solid #2B221C; padding:6px 12px; text-align:center; font-size:12px; font-weight:800; color:#F59E0B;">
+            ⚖️ تعادل في النقاط (0 - 0)
+          </div>
+
+          <!-- Saved Rounds List Table (يتم كتابة النتيجة تحته مباشرة) -->
+          <div id="savedRoundsList" style="max-height:220px; overflow-y:auto;">
+            <div style="text-align:center; color:var(--text-dim); padding:18px 10px; font-size:12px;">
+              لا توجد جولات مسجلة بعد. اكتب النتيجة واضغط الجولة التالية.
+            </div>
+          </div>
+
+          <!-- Current Round Input Row (مباشرة تحت قائمة الجولات) -->
+          <div style="background:#181310; border-top:1.5px solid #2B221C; padding:10px 12px;">
+            <div style="font-size:11px; font-weight:800; color:var(--text-sub); text-align:center; margin-bottom:6px;">
+              الجولة الحالية (<span id="currentRoundNumberLabel">1</span>)
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <!-- Team 1 input -->
+              <div style="flex:1;">
+                <input type="text" id="roundPts1" inputmode="numeric" placeholder="النتيجة"
+                  oninput="handleRoundInput(1)"
+                  onkeypress="if(event.key==='Enter') nextRound()"
+                  style="width:100%; text-align:center; font-size:18px; font-weight:900; background:#0E0B09; border:1.5px solid var(--accent); color:var(--accent); border-radius:10px; padding:8px; outline:none;">
+              </div>
+
+              <!-- VS divider -->
+              <div style="color:var(--text-dim); font-weight:900; font-size:12px;">VS</div>
+
+              <!-- Team 2 input -->
+              <div style="flex:1;">
+                <input type="text" id="roundPts2" inputmode="numeric" placeholder="النتيجة"
+                  oninput="handleRoundInput(2)"
+                  onkeypress="if(event.key==='Enter') nextRound()"
+                  style="width:100%; text-align:center; font-size:18px; font-weight:900; background:#0E0B09; border:1.5px solid #3B82F6; color:#60A5FA; border-radius:10px; padding:8px; outline:none;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- زر الجولة التالية وتحفظ الجولة الأولى وهكذا مهما زاد عدد الجولات -->
+        <button type="button" class="btn-submit-order" onclick="nextRound()" style="padding:12px; font-size:14px; font-weight:900; margin-bottom:10px; border-radius:12px; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <span>الجولة التالية</span>
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+
+        <!-- أدوات التحكم: تراجع وتصفير -->
+        <div style="display:flex; gap:8px;">
+          <button type="button" onclick="undoLastRound()" style="flex:1; background:#1C1714; border:1px solid var(--bg-card-border); color:var(--text-sub); border-radius:10px; padding:8px; font-size:12px; font-weight:700; cursor:pointer;">
+            <i class="fa-solid fa-rotate-left"></i> تراجع عن جولة
+          </button>
+          <button type="button" class="btn-service" style="flex:1; border-color:#EF4444; color:#EF4444; padding:8px; font-size:12px; border-radius:10px;" onclick="resetScores()">
+            <i class="fa-solid fa-trash-can" style="color:#EF4444;"></i>
+            <span>تصفير النشرة</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Orders List Modal -->
+  <div class="modal-overlay" id="ordersListModal" style="align-items:flex-end;">
+    <div class="sheet-card" style="max-height:85vh; display:flex; flex-direction:column;">
+      <div class="sheet-header">
+        <div class="sheet-title">
+          <i class="fa-solid fa-clock-rotate-left" style="color:var(--accent);"></i>
+          <span>طلبات طاولة <span id="ordersModalTableNum">1</span></span>
+        </div>
+        <button class="btn-close-sheet" onclick="closeOrdersListModal()">&times;</button>
+      </div>
+
+      <div class="sheet-body" style="overflow-y:auto; flex:1; padding-bottom:16px;">
+        <div id="ordersListContainer">
+          <div style="text-align:center; padding:30px 10px; color:var(--text-dim);">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size:24px; color:var(--accent);"></i>
+            <p style="margin-top:8px;">جاري تحميل طلبات الطاولة...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // 1. Firebase Initialization
+    const firebaseConfig = {
+      apiKey: "AIzaSyAfudWfJUQBYlONgyVs50rRAEadPB4h1E8",
+      projectId: "cafe00000-dee29",
+      appId: "1:686032896219:android:df35736a41046ff9520cfe",
+      messagingSenderId: "686032896219"
+    };
+
+    let db = null;
+    try {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      db = firebase.firestore();
+    } catch (e) {
+      console.warn("Firebase Init Error:", e);
+    }
+
+    // 2. Parse URL Query Parameters with multi-tenant cafeteria support
+    const urlParams = new URLSearchParams(window.location.search);
+    const cafeteriaId = (
+      urlParams.get('cafeteriaId') || 
+      urlParams.get('cafeId') || 
+      urlParams.get('c') || 
+      localStorage.getItem('cafe_last_cafeteria_id') || 
+      ''
+    ).trim();
+
+    const tableNumber = (
+      urlParams.get('table') || 
+      urlParams.get('tableNumber') || 
+      urlParams.get('t') || 
+      localStorage.getItem('cafe_last_table_number') || 
+      '1'
+    ).trim();
+
+    const secToken = (urlParams.get('sec') || '').trim();
+
+    // Persist active cafeteria and table for reliable experience on the same device
+    if (cafeteriaId) {
+      try { localStorage.setItem('cafe_last_cafeteria_id', cafeteriaId); } catch (_) {}
+    }
+    if (tableNumber) {
+      try { localStorage.setItem('cafe_last_table_number', tableNumber); } catch (_) {}
+    }
+
+    // Update Header Table Pill if present
+    const tablePill = document.getElementById('tablePillText');
+    if (tablePill) tablePill.innerText = 'طاولة رقم ' + tableNumber;
+
+    // Load Saved Customer Name & Phone
+    try {
+      const savedName = localStorage.getItem('cafe_customer_name');
+      if (savedName) document.getElementById('customerName').value = savedName;
+      const savedPhone = localStorage.getItem('cafe_customer_phone');
+      if (savedPhone) document.getElementById('customerPhone').value = savedPhone;
+    } catch (_) {}
+
+    // State
+    let allMenuItems = [];
+    let categories = [];
+    let activeCategory = 'ALL';
+    let currentMainTab = 'MENU'; // 'MENU' (قائمة الطلب) or 'OFFERS' (العروض)
+    let cart = []; // Array of { item, qty }
+
+    // 3. Load Cafeteria Profile & Menu from Firestore
+    function loadData() {
+      if (!db) {
+        showNoDbWarning();
+        return;
+      }
+
+      // If no cafeteria ID was provided in the barcode or storage, guide the user
+      if (!cafeteriaId) {
+        document.getElementById('itemsList').innerHTML = `
+          <div style="text-align:center; padding: 40px 16px; background: #1C1714; border: 1.5px dashed var(--accent); border-radius: 18px; margin: 20px 0;">
+            <i class="fa-solid fa-qrcode" style="font-size: 42px; color: var(--accent); margin-bottom: 12px;"></i>
+            <h3 style="font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 8px;">يرجى مسح باركود الكافتيريا</h3>
+            <p style="font-size: 13px; color: var(--text-sub); line-height: 1.6;">
+              لم يتم العثور على معرّف الكافتيريا في الرابط. يرجى مسح باركود الطاولة المخصص لك لتنزيل المنيو وإرسال طلباتك مباشرة إلى شاشة الكاشير.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      // Smart Multi-Cafeteria Local Caching System (يوفر 95% من قراءات فايربيس)
+      const CACHE_KEY = 'qcafe_menu_cache_' + cafeteriaId;
+      let cachedData = null;
+      try {
+        const stored = localStorage.getItem(CACHE_KEY);
+        if (stored) {
+          cachedData = JSON.parse(stored);
+          if (cachedData && Array.isArray(cachedData.items) && cachedData.items.length > 0) {
+            // Immediate Instant Render from cache (سرعة فتح فائقة للزبون)
+            if (Array.isArray(cachedData.categories) && cachedData.categories.length > 0) {
+              categories = cachedData.categories;
+              renderCategories();
+            }
+            allMenuItems = cachedData.items;
+            filterMenuItems();
+          }
+        }
+      } catch (e) {
+        console.warn("Cache read error:", e);
+      }
+
+      function fetchFreshMenuAndCache(menuVersion) {
+        // Fetch Categories once
+        const catPromise = db.collection('cafeterias').doc(cafeteriaId).collection('categories').get()
+          .then(snap => {
+            if (snap && !snap.empty) {
+              categories = [];
+              snap.forEach(doc => categories.push({ id: doc.id, ...doc.data() }));
+              renderCategories();
+            }
+            return categories;
+          }).catch(err => {
+            console.warn("Categories load:", err);
+            return categories;
+          });
+
+        // Fetch Menu Items once
+        const itemsPromise = db.collection('cafeterias').doc(cafeteriaId).collection('menu_items').get()
+          .then(snap => {
+            if (snap && !snap.empty) {
+              populateItemsFromSnap(snap);
+              return allMenuItems;
+            } else {
+              return db.collection('cafeterias').doc(cafeteriaId).collection('menu').get().then(legacySnap => {
+                if (legacySnap && !legacySnap.empty) {
+                  populateItemsFromSnap(legacySnap);
+                } else {
+                  allMenuItems = [];
+                  filterMenuItems();
+                }
+                return allMenuItems;
+              });
+            }
+          }).catch(err => {
+            console.warn("Firestore menu_items load error:", err);
+            return allMenuItems;
+          });
+
+        Promise.all([catPromise, itemsPromise]).then(([loadedCats, loadedItems]) => {
+          try {
+            cachedData = {
+              version: menuVersion || Date.now(),
+              categories: loadedCats,
+              items: loadedItems,
+              savedAt: Date.now()
+            };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(cachedData));
+          } catch (e) {
+            console.warn("Cache write error:", e);
+          }
+        });
+      }
+
+      // Real-time listener for Cafe Profile & Active/Suspended Status
+      db.collection('cafeterias').doc(cafeteriaId).onSnapshot(doc => {
+        if (doc && doc.exists) {
+          const data = doc.data();
+          const name = data.cafeName || data.name || data.title;
+          const nameEl = document.getElementById('cafeName');
+          if (nameEl && name) nameEl.innerText = name;
+          const logo = data.customLogoUri || data.logoUrl || data.logoUri;
+          const logoEl = document.getElementById('cafeLogo');
+          if (logoEl && logo) logoEl.src = logo;
+          const subEl = document.getElementById('cafeSubtitle');
+          if (subEl) subEl.innerText = `طاولة رقم ${tableNumber} - مرحباً بكم`;
+
+          const isActive = data.isActive !== false;
+          if (!isActive) {
+            showSuspendedOverlay(data.suspensionReason || 'عذراً، تم ايقاف النضام في هذه الكافتيريا حالياً لمراجعة الحسابات.');
+          } else {
+            hideSuspendedOverlay();
+          }
+
+          // Smart Caching: Compare menu update timestamp with locally stored version
+          const remoteVersion = data.menuUpdatedAt || data.updatedAt || 0;
+          const cachedVersion = cachedData ? (cachedData.version || 0) : 0;
+          const cacheAge = cachedData ? (Date.now() - (cachedData.savedAt || 0)) : Infinity;
+
+          // Fetch fresh menu only if cache is absent, or cafe owner updated items, or cache > 6 hours
+          if (!cachedData || remoteVersion > cachedVersion || cacheAge > 6 * 3600 * 1000) {
+            fetchFreshMenuAndCache(remoteVersion);
+          }
+        } else {
+          if (!cachedData) fetchFreshMenuAndCache(Date.now());
+        }
+      }, err => {
+        console.warn("Cafe profile load:", err);
+        if (!cachedData) fetchFreshMenuAndCache(Date.now());
+      });
+
+      // Quick check if the table QR barcode was renewed (one-time fetch to save realtime listeners)
+      if (tableNumber) {
+        db.collection('cafeterias').doc(cafeteriaId).collection('tables').doc('table_' + tableNumber)
+          .get().then(tblSnap => {
+            if (tblSnap && tblSnap.exists) {
+              const tblData = tblSnap.data();
+              const serverSec = (tblData.securityToken || '').trim();
+              if (serverSec && secToken && secToken !== serverSec) {
+                showExpiredBarcodeOverlay();
+                return;
+              }
+              hideExpiredBarcodeOverlay();
+            }
+          }).catch(err => console.warn("Table QR validation:", err));
+      }
+    }
+
+    function populateItemsFromSnap(snap) {
+      allMenuItems = [];
+      snap.forEach(doc => {
+        const item = { id: doc.id, ...doc.data() };
+        if (item.isAvailable !== false) {
+          allMenuItems.push(item);
+        }
+      });
+      filterMenuItems();
+    }
+
+    function showNoDbWarning() {
+      document.getElementById('itemsList').innerHTML = `
+        <div style="text-align:center; padding: 40px 10px; color: var(--danger);">
+          <i class="fa-solid fa-triangle-exclamation" style="font-size:32px; margin-bottom:8px;"></i>
+          <p style="font-weight:700;">تعذر الاتصال بقاعدة البيانات. يرجى التأكد من اتصال الإنترنت.</p>
+        </div>
+      `;
+    }
+
+    // 4. Render Category Tabs
+    function renderCategories() {
+      const tabs = document.getElementById('categoryTabs');
+      let html = `<button class="cat-btn ${activeCategory === 'ALL' ? 'active' : ''}" onclick="selectCategory('ALL')">✨ الكل</button>`;
+      categories.forEach(cat => {
+        const isActive = activeCategory === cat.id ? 'active' : '';
+        html += `<button class="cat-btn ${isActive}" onclick="selectCategory('${cat.id}')">${cat.nameAr}</button>`;
+      });
+      tabs.innerHTML = html;
+    }
+
+    function selectCategory(catId) {
+      if (currentMainTab !== 'MENU') {
+        switchMainTab('MENU', false);
+      }
+      activeCategory = catId;
+      renderCategories();
+      filterMenuItems();
+    }
+
+    // Switch between Main Tabs: 'MENU' (قائمة الطلب) or 'OFFERS' (العروض)
+    function switchMainTab(tab, triggerToast = true) {
+      currentMainTab = tab;
+      const tabMenuBtn = document.getElementById('tabMenuBtn');
+      const tabOffersBtn = document.getElementById('tabOffersBtn');
+      const catTabs = document.getElementById('categoryTabs');
+
+      if (tab === 'MENU') {
+        if (tabMenuBtn) tabMenuBtn.classList.add('active');
+        if (tabOffersBtn) tabOffersBtn.classList.remove('active');
+        if (catTabs) catTabs.style.display = 'flex';
+      } else if (tab === 'OFFERS') {
+        if (tabOffersBtn) tabOffersBtn.classList.add('active');
+        if (tabMenuBtn) tabMenuBtn.classList.remove('active');
+        if (catTabs) catTabs.style.display = 'none'; // Offers are displayed directly
+      }
+      filterMenuItems();
+    }
+
+    // 5. Render Menu Items with Instant Steppers
+    function filterMenuItems() {
+      const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      const list = document.getElementById('itemsList');
+
+      let filtered = allMenuItems.filter(item => {
+        if (currentMainTab === 'OFFERS') {
+          // Check if item is configured as an offer from settings
+          const isOffer = (item.isOffer === true || item.isOffer === "true") || (Number(item.offerDiscountPercent) > 0);
+          const matchQuery = !q || (item.nameAr && item.nameAr.toLowerCase().includes(q)) || (item.descriptionAr && item.descriptionAr.toLowerCase().includes(q));
+          return isOffer && matchQuery;
+        }
+
+        const matchCat = (activeCategory === 'ALL' || item.categoryId === activeCategory);
+        const matchQuery = !q || (item.nameAr && item.nameAr.toLowerCase().includes(q)) || (item.descriptionAr && item.descriptionAr.toLowerCase().includes(q));
+        return matchCat && matchQuery;
+      });
+
+      if (filtered.length === 0) {
+        if (currentMainTab === 'OFFERS') {
+          list.innerHTML = `
+            <div style="text-align:center; padding: 40px 14px; background: #1C1714; border: 1.5px dashed #F59E0B; border-radius: 18px; margin: 10px 0;">
+              <i class="fa-solid fa-fire" style="font-size: 38px; color: #F59E0B; margin-bottom: 10px;"></i>
+              <h3 style="font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px;">لا توجد عروض مخصصة حالياً</h3>
+              <p style="font-size: 13px; color: var(--text-sub); line-height: 1.5; margin-bottom: 14px;">
+                لم يتم إدراج عروض ترويجية من إعدادات المنيو حالياً. تصفح قائمة الطلب لاختيار ما يعجبك!
+              </p>
+              <button onclick="switchMainTab('MENU')" class="cat-btn active" style="padding: 8px 18px; font-size: 13px;">
+                <i class="fa-solid fa-utensils"></i> الانتقال لقائمة الطلب
+              </button>
+            </div>
+          `;
+        } else {
+          list.innerHTML = `
+            <div style="text-align:center; padding: 40px 10px; color: var(--text-dim);">
+              <i class="fa-solid fa-mug-hot" style="font-size:32px; color:var(--bg-card-border); margin-bottom:8px;"></i>
+              <p style="font-weight:700;">لا توجد أصناف متوفرة في هذا القسم حالياً</p>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(item => {
+        const inCart = cart.find(c => c.item.id === item.id);
+        const qty = inCart ? inCart.qty : 0;
+        const numPrice = Number(item.price) || 0;
+        const priceFmt = numPrice.toLocaleString('ar-IQ') + ' ' + (item.currency || 'د.ع');
+        const img = item.imageUrl || item.imageUri || item.customImageUri || item.bgImageUri || '';
+        const isOfferItem = (item.isOffer === true || item.isOffer === "true") || (Number(item.offerDiscountPercent) > 0);
+        const tagText = item.offerTag || 'عرض خاص';
+        const disc = Number(item.offerDiscountPercent) || 0;
+
+        let gallery = [];
+        if (Array.isArray(item.galleryImages)) {
+          gallery = item.galleryImages.filter(Boolean);
+        } else if (typeof item.galleryImages === 'string' && item.galleryImages.length > 0) {
+          gallery = item.galleryImages.split('|||').filter(Boolean);
+        }
+        const allImgs = [];
+        if (img) allImgs.push(img);
+        gallery.forEach(g => {
+          if (g && !allImgs.includes(g)) allImgs.push(g);
+        });
+
+        html += `
+          <div class="item-card" onclick="openItemDetails('${item.id}')" style="${isOfferItem ? 'border-color: rgba(245,158,11,0.5);' : ''}">
+            <div class="item-img-wrap" style="position:relative;">
+              ${isOfferItem ? `<span style="position:absolute; top:4px; right:4px; background:#F59E0B; color:#000; font-size:9px; font-weight:900; padding:2px 6px; border-radius:6px; z-index:2;">${tagText} 🔥</span>` : ''}
+              ${allImgs.length > 1 ? `<span class="badge-gallery-count"><i class="fa-solid fa-camera"></i> ${allImgs.length} صور</span>` : ''}
+              ${img ? `<img src="${img}" alt="${item.nameAr}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><i class="fa-solid fa-mug-hot item-img-placeholder" style="display:none;"></i>` : `<i class="fa-solid fa-mug-hot item-img-placeholder"></i>`}
+            </div>
+            <div class="item-info">
+              <div class="item-title">
+                ${item.nameAr}
+                ${disc > 0 ? `<span style="font-size:10px; background:rgba(239,68,68,0.2); color:#F87171; border:1px solid rgba(239,68,68,0.4); padding:1px 5px; border-radius:4px; margin-right:6px; font-weight:800;">خصم ${disc}%</span>` : ''}
+              </div>
+              <div class="item-desc">${item.descriptionAr || ''}</div>
+              <div class="item-details-link"><i class="fa-solid fa-circle-info"></i> مزيد من الصور والتفاصيل ${allImgs.length > 1 ? `(${allImgs.length} صور)` : ''}</div>
+              <div class="item-bottom">
+                <div class="item-price">${priceFmt}</div>
+                <!-- Stepper (+ / -) directly on card -->
+                <div class="card-stepper" onclick="event.stopPropagation();">
+                  <button type="button" class="btn-step btn-step-minus" onclick="event.stopPropagation(); changeQty('${item.id}', -1)">−</button>
+                  <span id="qty_${item.id}" class="card-qty-label">${qty}</span>
+                  <button type="button" class="btn-step btn-step-plus" onclick="event.stopPropagation(); changeQty('${item.id}', 1)">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      list.innerHTML = html;
+    }
+
+    // Item Details & Multi-Image Gallery Logic
+    let currentDetailsItemId = null;
+    let currentDetailsImgIndex = 0;
+    let currentDetailsImgs = [];
+
+    function openItemDetails(itemId) {
+      const item = allMenuItems.find(i => i.id === itemId);
+      if (!item) return;
+
+      currentDetailsItemId = itemId;
+      currentDetailsImgIndex = 0;
+
+      const mainImg = item.imageUrl || item.imageUri || item.customImageUri || item.bgImageUri || '';
+      let gallery = [];
+      if (Array.isArray(item.galleryImages)) {
+        gallery = item.galleryImages.filter(Boolean);
+      } else if (typeof item.galleryImages === 'string' && item.galleryImages.length > 0) {
+        gallery = item.galleryImages.split('|||').filter(Boolean);
+      }
+
+      currentDetailsImgs = [];
+      if (mainImg) currentDetailsImgs.push(mainImg);
+      gallery.forEach(g => {
+        if (g && !currentDetailsImgs.includes(g)) currentDetailsImgs.push(g);
+      });
+
+      renderItemDetailsModal(item);
+      document.getElementById('itemDetailsModal').style.display = 'flex';
+    }
+
+    function closeItemDetailsModal() {
+      document.getElementById('itemDetailsModal').style.display = 'none';
+      currentDetailsItemId = null;
+    }
+
+    function selectGalleryImage(idx) {
+      if (idx < 0 || idx >= currentDetailsImgs.length) return;
+      currentDetailsImgIndex = idx;
+      const mainImgElem = document.getElementById('detailsMainImg');
+      const counterElem = document.getElementById('detailsImgCounter');
+      if (mainImgElem) mainImgElem.src = currentDetailsImgs[idx];
+      if (counterElem) counterElem.innerText = `الصورة ${idx + 1} من ${currentDetailsImgs.length}`;
+
+      const thumbs = document.querySelectorAll('.gallery-thumb');
+      thumbs.forEach((th, i) => {
+        if (i === idx) th.classList.add('active');
+        else th.classList.remove('active');
+      });
+    }
+
+    function renderItemDetailsModal(item) {
+      const titleElem = document.getElementById('detailsTitle');
+      const galleryViewer = document.getElementById('detailsGalleryViewer');
+      const thumbsContainer = document.getElementById('detailsThumbsRow');
+      const priceElem = document.getElementById('detailsPrice');
+      const badgesElem = document.getElementById('detailsBadges');
+      const descElem = document.getElementById('detailsDesc');
+
+      if (titleElem) titleElem.innerText = item.nameAr;
+
+      const numPrice = Number(item.price) || 0;
+      const priceFmt = numPrice.toLocaleString('ar-IQ') + ' ' + (item.currency || 'د.ع');
+      if (priceElem) priceElem.innerText = priceFmt;
+
+      // Badges
+      let badgesHtml = '';
+      const cat = categories.find(c => c.id === item.categoryId);
+      if (cat) {
+        badgesHtml += `<span class="details-badge cat">${cat.nameAr}</span>`;
+      }
+      const isOffer = item.isOffer === true || item.isOffer === "true" || (item.offerDiscountPercent && Number(item.offerDiscountPercent) > 0);
+      if (isOffer) {
+        const disc = Number(item.offerDiscountPercent) || 0;
+        const tag = item.offerTag || 'عرض خاص';
+        badgesHtml += `<span class="details-badge offer">${tag} 🔥</span>`;
+        if (disc > 0) {
+          badgesHtml += `<span class="details-badge discount">خصم ${disc}%</span>`;
+        }
+      }
+      if (badgesElem) badgesElem.innerHTML = badgesHtml;
+
+      // Description
+      if (descElem) {
+        descElem.innerText = item.descriptionAr || 'لا يوجد وصف إضافي متوفر لهذا الصنف.';
+      }
+
+      // Gallery Images
+      if (currentDetailsImgs.length > 0) {
+        galleryViewer.style.display = 'flex';
+        galleryViewer.innerHTML = `
+          <img id="detailsMainImg" src="${currentDetailsImgs[0]}" alt="${item.nameAr}" onerror="this.src=''; this.style.display='none';">
+          ${currentDetailsImgs.length > 1 ? `<span id="detailsImgCounter" class="gallery-counter-pill">الصورة 1 من ${currentDetailsImgs.length}</span>` : ''}
+        `;
+
+        if (currentDetailsImgs.length > 1) {
+          thumbsContainer.style.display = 'flex';
+          let thumbsHtml = '';
+          currentDetailsImgs.forEach((imgUri, idx) => {
+            thumbsHtml += `
+              <div class="gallery-thumb ${idx === 0 ? 'active' : ''}" onclick="selectGalleryImage(${idx})">
+                <img src="${imgUri}" alt="صورة ${idx + 1}">
+              </div>
+            `;
+          });
+          thumbsContainer.innerHTML = thumbsHtml;
+        } else {
+          thumbsContainer.style.display = 'none';
+        }
+      } else {
+        galleryViewer.style.display = 'flex';
+        galleryViewer.innerHTML = `<i class="fa-solid fa-mug-hot" style="font-size:48px; color:var(--accent);"></i>`;
+        thumbsContainer.style.display = 'none';
+      }
+
+      updateDetailsModalStepper(item.id);
+    }
+
+    function updateDetailsModalStepper(itemId) {
+      const actionElem = document.getElementById('detailsActionRow');
+      if (!actionElem) return;
+      const inCart = cart.find(c => c.item.id === itemId);
+      const qty = inCart ? inCart.qty : 0;
+
+      if (qty === 0) {
+        actionElem.innerHTML = `
+          <button type="button" class="btn-submit-order" onclick="changeQtyFromModal('${itemId}', 1)" style="margin-top:0;">
+            <i class="fa-solid fa-cart-plus"></i>
+            <span>إضافة إلى الطلب</span>
+          </button>
+        `;
+      } else {
+        actionElem.innerHTML = `
+          <div style="display:flex; align-items:center; justify-content:space-between; width:100%; background:#181412; border:1px solid var(--accent); border-radius:14px; padding:8px 14px;">
+            <span style="font-size:13px; font-weight:800; color:var(--accent);">تمت الإضافة للطلب (${qty}) ✅</span>
+            <div class="card-stepper" style="transform:scale(1.15);">
+              <button type="button" class="btn-step btn-step-minus" onclick="changeQtyFromModal('${itemId}', -1)">−</button>
+              <span id="modal_qty_${itemId}" class="card-qty-label" style="min-width:28px;">${qty}</span>
+              <button type="button" class="btn-step btn-step-plus" onclick="changeQtyFromModal('${itemId}', 1)">+</button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function changeQtyFromModal(itemId, delta) {
+      changeQty(itemId, delta);
+      updateDetailsModalStepper(itemId);
+    }
+
+    // 6. Direct & Immediate Quantity Change
+    function changeQty(itemId, delta) {
+      const item = allMenuItems.find(i => i.id === itemId);
+      if (!item) return;
+
+      let idx = cart.findIndex(c => c.item.id === itemId);
+      let newQty = 0;
+
+      if (delta > 0) {
+        if (idx >= 0) {
+          cart[idx].qty += delta;
+          newQty = cart[idx].qty;
+        } else {
+          cart.push({ item: item, qty: 1 });
+          newQty = 1;
+        }
+      } else if (delta < 0) {
+        if (idx >= 0) {
+          cart[idx].qty += delta;
+          if (cart[idx].qty <= 0) {
+            cart.splice(idx, 1);
+            newQty = 0;
+          } else {
+            newQty = cart[idx].qty;
+          }
+        }
+      }
+
+      // Update the number directly on the item card (instant visual response)
+      const lbl = document.getElementById('qty_' + itemId);
+      if (lbl) {
+        lbl.innerText = newQty;
+        lbl.style.color = newQty > 0 ? 'var(--accent)' : '#FFFFFF';
+      }
+
+      // If details modal is open for this item, sync its stepper
+      if (currentDetailsItemId === itemId) {
+        updateDetailsModalStepper(itemId);
+      }
+
+      updateFloatingCart();
+
+      // If cart modal is currently open, re-render its list
+      if (document.getElementById('cartModal').style.display === 'flex') {
+        renderCartModalItems();
+      }
+    }
+
+    // 7. Update Floating Cart Bar
+    function updateFloatingCart() {
+      const bar = document.getElementById('floatingCart');
+      const badge = document.getElementById('cartBadgeCount');
+      const totalText = document.getElementById('cartBarTotal');
+
+      const totalItems = cart.reduce((sum, c) => sum + c.qty, 0);
+      const totalPrice = cart.reduce((sum, c) => sum + ((Number(c.item.price) || 0) * c.qty), 0);
+      const currency = cart[0]?.item.currency || 'د.ع';
+
+      if (totalItems > 0) {
+        bar.style.display = 'flex';
+        badge.innerText = totalItems + ' أصناف';
+        totalText.innerText = totalPrice.toLocaleString('ar-IQ') + ' ' + currency;
+      } else {
+        bar.style.display = 'none';
+      }
+    }
+
+    // 8. Cart Modal Functions
+    function openCartModal() {
+      if (cart.length === 0) return;
+      renderCartModalItems();
+      document.getElementById('cartModal').style.display = 'flex';
+    }
+
+    function closeCartModal() {
+      document.getElementById('cartModal').style.display = 'none';
+      document.getElementById('nameError').style.display = 'none';
+    }
+
+    function renderCartModalItems() {
+      const list = document.getElementById('cartItemsList');
+      const totalSpan = document.getElementById('modalTotalPrice');
+
+      if (cart.length === 0) {
+        closeCartModal();
+        return;
+      }
+
+      let html = '';
+      let sum = 0;
+      let curr = cart[0]?.item.currency || 'د.ع';
+
+      cart.forEach(c => {
+        const itemPrice = Number(c.item.price) || 0;
+        const itemTotal = itemPrice * c.qty;
+        sum += itemTotal;
+        html += `
+          <div class="cart-row">
+            <div class="cart-row-info">
+              <h4>${c.item.nameAr}</h4>
+              <span>${itemTotal.toLocaleString('ar-IQ')} ${curr} (${c.qty} × ${itemPrice.toLocaleString('ar-IQ')})</span>
+            </div>
+            <div class="card-stepper">
+              <button type="button" class="btn-step btn-step-minus" onclick="changeQty('${c.item.id}', -1)">−</button>
+              <span class="card-qty-label" style="min-width:28px;">${c.qty}</span>
+              <button type="button" class="btn-step btn-step-plus" onclick="changeQty('${c.item.id}', 1)">+</button>
+            </div>
+          </div>
+        `;
+      });
+
+      list.innerHTML = html;
+      totalSpan.innerText = sum.toLocaleString('ar-IQ') + ' ' + curr;
+    }
+
+    // 9. Instant Submit Order to Firestore with Duplicate Prevention
+    let isSubmittingOrder = false;
+    function submitOrder() {
+      if (isSubmittingOrder) return;
+      if (document.getElementById('suspendedModal')?.style.display === 'flex') {
+        alert('عذراً، استقبال الطلبات في هذه الكافتيريا متوقف حالياً.');
+        return;
+      }
+      if (cart.length === 0) return;
+
+      const nameInput = document.getElementById('customerName');
+      const custName = (nameInput ? nameInput.value.trim() : '') || '';
+      const phoneInput = document.getElementById('customerPhone');
+      const custPhone = (phoneInput ? phoneInput.value.trim() : '') || '';
+      
+      if (!custName) {
+        const err = document.getElementById('nameError');
+        if (err) err.style.display = 'block';
+        if (nameInput) {
+          nameInput.focus();
+          nameInput.style.borderColor = 'var(--danger)';
+        }
+        return;
+      }
+      isSubmittingOrder = true;
+      setTimeout(() => { isSubmittingOrder = false; }, 3000);
+
+      try {
+        localStorage.setItem('cafe_customer_name', custName);
+        if (custPhone) {
+          localStorage.setItem('cafe_customer_phone', custPhone);
+        }
+      } catch (_) {}
+
+      const numTable = parseInt(tableNumber, 10) || 1;
+      const totalQty = cart.reduce((sum, c) => sum + c.qty, 0);
+      const totalSum = cart.reduce((sum, c) => sum + ((Number(c.item.price) || 0) * c.qty), 0);
+      const currency = cart[0]?.item.currency || 'د.ع';
+      const notes = (document.getElementById('orderNotes')?.value || '').trim();
+      const summary = cart.map(c => {
+        const linePrice = (Number(c.item.price) || 0) * c.qty;
+        const formattedPrice = linePrice.toLocaleString('en-US');
+        return `${c.qty}x ${c.item.nameAr} بسعر ${formattedPrice} ${currency}`;
+      }).join('، ');
+
+      const orderId = 'ord_' + Math.floor(100000 + Math.random() * 900000);
+
+      const orderData = {
+        id: orderId,
+        cafeteriaId: cafeteriaId,
+        tableNumber: numTable,
+        customerName: custName,
+        customerPhone: custPhone,
+        itemsSummary: summary,
+        itemsCount: totalQty,
+        totalPrice: totalSum,
+        subtotal: totalSum,
+        serviceFee: 0,
+        currency: currency,
+        status: "NEW",
+        timestamp: Date.now(),
+        notes: notes,
+        securityToken: secToken
+      };
+
+      // 1. Dispatch Write to THIS cafeteria's orders subcollection
+      if (db && cafeteriaId) {
+        db.collection('cafeterias').doc(cafeteriaId).collection('orders').doc(orderId).set(orderData)
+          .then(() => console.log("Order written to cafeteria orders:", orderId))
+          .catch(err => console.error("Firestore write order error:", err));
+
+        try {
+          db.collection('orders').doc(orderId).set(orderData).catch(() => {});
+        } catch (_) {}
+      }
+
+      // 2. IMMEDIATE TRANSITION: Clear cart & show success right away
+      cart = [];
+      updateFloatingCart();
+
+      // Reset all visible labels on cards to 0
+      document.querySelectorAll('.card-qty-label').forEach(lbl => {
+        lbl.innerText = '0';
+        lbl.style.color = '#FFFFFF';
+      });
+
+      closeCartModal();
+      showSuccessModal(orderId);
+    }
+
+    // 10. Success & Tracking Modal
+    let trackingUnsub = null;
+    function showSuccessModal(orderId) {
+      document.getElementById('orderIdText').innerText = 'رقم الطلب: #' + orderId;
+      document.getElementById('trackingSubtext').innerText = `طلب طاولة ${tableNumber} وصل إلى الكاشير ويجري تحضيره الآن.`;
+      
+      const badge = document.getElementById('orderStatusBadge');
+      badge.className = 'status-badge new';
+      badge.innerText = '🕒 طلب جديد في الانتظار';
+
+      document.getElementById('trackingModal').style.display = 'flex';
+
+      // Realtime status listener for this specific cafeteria's order
+      if (db && cafeteriaId) {
+        if (trackingUnsub) trackingUnsub();
+        trackingUnsub = db.collection('cafeterias').doc(cafeteriaId).collection('orders').doc(orderId)
+          .onSnapshot(doc => {
+            if (doc && doc.exists) {
+              const status = doc.data().status;
+              if (status === 'PREPARING') {
+                badge.className = 'status-badge prep';
+                badge.innerText = '🍳 جاري التحضير في المطبخ';
+              } else if (status === 'READY' || status === 'DELIVERED') {
+                badge.className = 'status-badge ready';
+                badge.innerText = '🍽️ طلبك جاهز للتقديم على الطاولة';
+              } else if (status === 'PAID') {
+                badge.className = 'status-badge ready';
+                badge.innerText = '💵 تم تسديد الحساب بنجاح';
+              }
+            }
+          }, () => {});
+      }
+    }
+
+    function closeTrackingModal() {
+      document.getElementById('trackingModal').style.display = 'none';
+      if (trackingUnsub) {
+        trackingUnsub();
+        trackingUnsub = null;
+      }
+    }
+
+    // Suspension Overlay Handlers
+    function showSuspendedOverlay(reason) {
+      let overlay = document.getElementById('suspendedModal');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'suspendedModal';
+        overlay.className = 'modal-overlay';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.zIndex = '999999';
+        overlay.innerHTML = `
+          <div class="center-dialog" style="border-color:#EF4444; max-width:400px; padding:28px 20px; text-align:center;">
+            <div class="success-icon-wrap" style="border-color:#EF4444; background:rgba(239,68,68,0.15); color:#EF4444; margin:0 auto 12px auto;">
+              <i class="fa-solid fa-ban" style="font-size:28px;"></i>
+            </div>
+            <h2 style="font-size:20px; font-weight:900; color:#EF4444; margin-bottom:8px;">تم ايقاف النضام</h2>
+            <p id="suspendedReasonText" style="font-size:13px; color:var(--text-main); font-weight:700; line-height:1.6; margin-bottom:14px;"></p>
+            <div style="font-size:12px; color:#A89B91; background:#1F1916; padding:12px; border-radius:12px; border:1px solid #382F2A; line-height:1.6;">
+              تم ايقاف النضام في هذه الكافتيريا حالياً لمراجعة الحسابات. يرجى مراجعة إدارة الكافتيريا لإعادة التفعيل واستئناف الخدمة.
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+      }
+      const reasonEl = document.getElementById('suspendedReasonText');
+      if (reasonEl) reasonEl.innerText = reason || 'تم ايقاف النضام لمراجعة الحسابات';
+      overlay.style.display = 'flex';
+      closeCartModal();
+      const cartBar = document.getElementById('floatingCart');
+      if (cartBar) cartBar.style.display = 'none';
+    }
+
+    function hideSuspendedOverlay() {
+      const overlay = document.getElementById('suspendedModal');
+      if (overlay) overlay.style.display = 'none';
+    }
+
+    // Expired / Regenerated Barcode Overlay Handlers
+    function showExpiredBarcodeOverlay() {
+      let overlay = document.getElementById('expiredBarcodeModal');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'expiredBarcodeModal';
+        overlay.className = 'modal-overlay';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.zIndex = '999998';
+        overlay.innerHTML = `
+          <div class="center-dialog" style="border-color:#F59E0B; max-width:400px; padding:28px 20px; text-align:center;">
+            <div class="success-icon-wrap" style="border-color:#F59E0B; background:rgba(245,158,11,0.15); color:#F59E0B; margin:0 auto 12px auto;">
+              <i class="fa-solid fa-qrcode" style="font-size:28px;"></i>
+            </div>
+            <h2 style="font-size:18px; font-weight:900; color:#FFFFFF; margin-bottom:8px;">تم تجديد باركود الطاولة</h2>
+            <p style="font-size:13px; color:var(--text-sub); line-height:1.6; margin-bottom:14px;">
+              عذراً، هذا الباركود قديم وغير صالح لأن إدارة الكافتيريا قامت بتجديد باركود الطاولة (طاولة رقم ${tableNumber}).
+            </p>
+            <div style="font-size:12px; color:#F59E0B; background:#241C12; padding:12px; border-radius:12px; border:1px solid #4D3B1C; margin-bottom:14px; line-height:1.6;">
+              <i class="fa-solid fa-circle-exclamation" style="margin-left:4px;"></i>
+              يرجى مسح الباركود الجديد المحدث الملصق على الطاولة لفتح المنيو وإرسال طلباتك.
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+      }
+      overlay.style.display = 'flex';
+      closeCartModal();
+      const cartBar = document.getElementById('floatingCart');
+      if (cartBar) cartBar.style.display = 'none';
+    }
+
+    function hideExpiredBarcodeOverlay() {
+      const overlay = document.getElementById('expiredBarcodeModal');
+      if (overlay) overlay.style.display = 'none';
+    }
+
+    // 11. Orders List Modal Logic
+    let ordersListUnsub = null;
+
+    function openOrdersListModal() {
+      document.getElementById('ordersModalTableNum').innerText = tableNumber;
+      document.getElementById('ordersListModal').style.display = 'flex';
+      loadTableOrders();
+    }
+
+    function closeOrdersListModal() {
+      document.getElementById('ordersListModal').style.display = 'none';
+      if (ordersListUnsub) {
+        ordersListUnsub();
+        ordersListUnsub = null;
+      }
+    }
+
+    function getStatusBadgeHtml(status) {
+      switch (status) {
+        case 'PREPARING':
+          return '<span style="background:rgba(245,158,11,0.15); color:#F59E0B; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:800;">🍳 جاري التحضير</span>';
+        case 'READY':
+          return '<span style="background:rgba(16,185,129,0.15); color:#10B981; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:800;">🍽️ جاهز للتقديم</span>';
+        case 'DELIVERED':
+          return '<span style="background:rgba(16,185,129,0.15); color:#10B981; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:800;">✅ تم الاستلام</span>';
+        case 'PAID':
+          return '<span style="background:rgba(139,92,246,0.15); color:#A78BFA; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:800;">💵 تم التسديد</span>';
+        case 'CANCELLED':
+          return '<span style="background:rgba(239,68,68,0.15); color:#EF4444; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:800;">❌ ملغي</span>';
+        default:
+          return '<span style="background:rgba(59,130,246,0.15); color:#60A5FA; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:800;">🕒 قيد الانتظار</span>';
+      }
+    }
+
+    function formatTime(timestamp) {
+      if (!timestamp) return '';
+      try {
+        const d = new Date(timestamp);
+        return d.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function loadTableOrders() {
+      const container = document.getElementById('ordersListContainer');
+      if (!db || !cafeteriaId) {
+        container.innerHTML = `
+          <div style="text-align:center; padding:30px 10px; color:var(--text-dim);">
+            <i class="fa-solid fa-info-circle" style="font-size:28px; color:var(--accent); margin-bottom:8px;"></i>
+            <p>يرجى مسح باركود الطاولة المخصص لعرض الطلبات.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div style="text-align:center; padding:30px 10px; color:var(--text-dim);">
+          <i class="fa-solid fa-spinner fa-spin" style="font-size:24px; color:var(--accent);"></i>
+          <p style="margin-top:8px;">جاري تحميل طلبات الطاولة...</p>
+        </div>
+      `;
+
+      if (ordersListUnsub) ordersListUnsub();
+
+      const numTable = parseInt(tableNumber, 10);
+      ordersListUnsub = db.collection('cafeterias').doc(cafeteriaId).collection('orders')
+        .onSnapshot(snap => {
+          if (!snap || snap.empty) {
+            container.innerHTML = `
+              <div style="text-align:center; padding:40px 10px; color:var(--text-dim);">
+                <i class="fa-solid fa-receipt" style="font-size:36px; color:var(--bg-card-border); margin-bottom:10px;"></i>
+                <p style="font-weight:700; color:#fff; font-size:15px;">لا توجد طلبات مسجلة لهذه الطاولة بعد</p>
+                <p style="font-size:12px; margin-top:4px;">قم باختيار وجباتك ومشروباتك المفضلة وأرسل طلبك الآن!</p>
+              </div>
+            `;
+            return;
+          }
+
+          let orders = [];
+          snap.forEach(doc => {
+            const data = doc.data();
+            const orderTable = data.tableNumber;
+            if (orderTable == tableNumber || orderTable == numTable) {
+              orders.push({ id: doc.id, ...data });
+            }
+          });
+
+          // Sort descending by timestamp
+          orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+          if (orders.length === 0) {
+            container.innerHTML = `
+              <div style="text-align:center; padding:40px 10px; color:var(--text-dim);">
+                <i class="fa-solid fa-receipt" style="font-size:36px; color:var(--bg-card-border); margin-bottom:10px;"></i>
+                <p style="font-weight:700; color:#fff; font-size:15px;">لا توجد طلبات مسجلة لهذه الطاولة</p>
+                <p style="font-size:12px; margin-top:4px;">قم باختيار وجباتك ومشروباتك المفضلة وأرسل طلبك الآن!</p>
+              </div>
+            `;
+            return;
+          }
+
+          let html = '';
+          orders.forEach(order => {
+            const timeStr = formatTime(order.timestamp);
+            const statusBadge = getStatusBadgeHtml(order.status);
+            const totalFmt = (Number(order.totalPrice) || 0).toLocaleString('ar-IQ') + ' ' + (order.currency || 'د.ع');
+
+            let itemsSummary = '';
+            if (Array.isArray(order.items)) {
+              itemsSummary = order.items.map(it => {
+                const itName = it.nameAr || it.name || it.item?.nameAr || 'صنف';
+                const itQty = it.quantity || it.qty || 1;
+                const itPrice = Number(it.price || it.item?.price || 0) * itQty;
+                return `
+                  <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                    <span>${itQty} × ${itName}</span>
+                    <span style="color:var(--text-dim);">${itPrice.toLocaleString('ar-IQ')} د.ع</span>
+                  </div>
+                `;
+              }).join('');
+            }
+
+            html += `
+              <div class="order-history-card">
+                <div class="order-history-header">
+                  <div>
+                    <span class="order-history-id">#${order.id.slice(-6)}</span>
+                    <span class="order-history-time" style="margin-right:8px;">${timeStr}</span>
+                  </div>
+                  <div>${statusBadge}</div>
+                </div>
+
+                <div class="order-history-items">
+                  ${itemsSummary || '<span style="color:var(--text-dim);">تفاصيل الطلب غير متوفرة</span>'}
+                </div>
+
+                ${order.notes ? `<div style="font-size:11px; color:#F59E0B; margin-bottom:6px; background:rgba(245,158,11,0.08); padding:4px 8px; border-radius:6px;">ملاحظة: ${order.notes}</div>` : ''}
+
+                <div class="order-history-footer">
+                  <span style="font-size:12px; color:var(--text-sub);">المجموع الإجمالي:</span>
+                  <span style="color:var(--accent); font-size:14px;">${totalFmt}</span>
+                </div>
+              </div>
+            `;
+          });
+
+          container.innerHTML = html;
+        }, err => {
+          console.error("Orders load error:", err);
+          container.innerHTML = `
+            <div style="text-align:center; padding:30px 10px; color:var(--danger);">
+              <i class="fa-solid fa-triangle-exclamation" style="font-size:28px; margin-bottom:8px;"></i>
+              <p>تعذر تحميل الطلبات في الوقت الحالي.</p>
+            </div>
+          `;
+        });
+    }
+
+    // 12. Quick Waiter / Bill Service Call
+    function callService(type) {
+      const typeLabel = type === 'WAITER' ? 'نداء النادل' : 'طلب الحساب';
+      showToast(`⏳ جاري إرسال ${typeLabel}...`);
+
+      if (db && cafeteriaId) {
+        const callId = 'call_' + Date.now();
+        db.collection('cafeterias').doc(cafeteriaId).collection('service_calls').doc(callId).set({
+          id: callId,
+          cafeteriaId: cafeteriaId,
+          tableNumber: parseInt(tableNumber, 10) || 1,
+          type: type,
+          status: 'PENDING',
+          timestamp: Date.now()
+        }).catch(() => {});
+      }
+
+      setTimeout(() => {
+        showToast(type === 'WAITER' ? '🛎️ تم استدعاء النادل، سيصلك فوراً' : '🧾 تم إرسال طلب الحساب للكاشير');
+      }, 300);
+    }
+
+    // 12. Card Games Score Sheet Tracker
+    let gameRounds = []; // Array of { p1: number, p2: number, d1: string, d2: string, t1: number, t2: number }
+
+    function openGameModal() {
+      document.getElementById('gameModal').style.display = 'flex';
+      updateScoresView();
+    }
+
+    function closeGameModal() {
+      document.getElementById('gameModal').style.display = 'none';
+    }
+
+    // Auto-clear team default name when tapped/clicked so user types immediately without backspacing
+    function clearTeamDefaultName(input, defaultVal) {
+      const cur = (input.value || '').trim();
+      if (cur === defaultVal || cur === 'الفريق الأول' || cur === 'الفريق الثاني' || cur === 'فريق 1' || cur === 'فريق 2') {
+        input.value = '';
+      }
+    }
+
+    function restoreTeamDefaultName(input, defaultVal) {
+      if (!(input.value || '').trim()) {
+        input.value = defaultVal;
+      }
+      updateScoresView();
+    }
+
+    // Auto-fill X in opposite team input when a number is entered
+    function handleRoundInput(team) {
+      const in1 = document.getElementById('roundPts1');
+      const in2 = document.getElementById('roundPts2');
+      if (!in1 || !in2) return;
+
+      if (team === 1) {
+        const v1 = in1.value.trim();
+        if (v1 && v1.toUpperCase() !== 'X' && v1 !== '×') {
+          in2.value = 'X';
+        } else if (!v1 && (in2.value.toUpperCase() === 'X' || in2.value === '×')) {
+          in2.value = '';
+        }
+      } else {
+        const v2 = in2.value.trim();
+        if (v2 && v2.toUpperCase() !== 'X' && v2 !== '×') {
+          in1.value = 'X';
+        } else if (!v2 && (in1.value.toUpperCase() === 'X' || in1.value === '×')) {
+          in1.value = '';
+        }
+      }
+    }
+
+    // Next Round handler (الجولة التالية وتحفظ الجولة الأولى وهكذا مهما زاد عدد الجولات)
+    function nextRound() {
+      const in1 = document.getElementById('roundPts1');
+      const in2 = document.getElementById('roundPts2');
+      const v1 = (in1?.value || '').trim();
+      const v2 = (in2?.value || '').trim();
+
+      if (!v1 && !v2) {
+        showToast('⚠️ يرجى إدخال نتيجة الجولة');
+        return;
+      }
+
+      const isX1 = v1.toUpperCase() === 'X' || v1 === '×';
+      const isX2 = v2.toUpperCase() === 'X' || v2 === '×';
+
+      const p1 = isX1 ? 0 : (parseInt(v1, 10) || 0);
+      const p2 = isX2 ? 0 : (parseInt(v2, 10) || 0);
+
+      const d1 = isX1 ? 'X' : p1.toString();
+      const d2 = isX2 ? 'X' : p2.toString();
+
+      const prevT1 = gameRounds.length > 0 ? gameRounds[gameRounds.length - 1].t1 : 0;
+      const prevT2 = gameRounds.length > 0 ? gameRounds[gameRounds.length - 1].t2 : 0;
+
+      gameRounds.push({
+        p1: p1,
+        p2: p2,
+        d1: d1,
+        d2: d2,
+        t1: prevT1 + p1,
+        t2: prevT2 + p2
+      });
+
+      if (in1) in1.value = '';
+      if (in2) in2.value = '';
+
+      updateScoresView();
+
+      // Scroll to bottom of rounds
+      const roundsList = document.getElementById('savedRoundsList');
+      if (roundsList) {
+        roundsList.scrollTop = roundsList.scrollHeight;
+      }
+
+      if (in1) in1.focus();
+    }
+
+    function undoLastRound() {
+      if (gameRounds.length === 0) {
+        showToast('لا توجد جولات للتراجع عنها');
+        return;
+      }
+      gameRounds.pop();
+      updateScoresView();
+      showToast('↩️ تم التراجع عن آخر جولة');
+    }
+
+    function resetScores() {
+      if (gameRounds.length > 0 && !confirm('هل أنت متأكد من تصفير كافة نقاط اللعبة وبدء نشرة جديدة؟')) {
+        return;
+      }
+      gameRounds = [];
+      const p1Input = document.getElementById('roundPts1');
+      const p2Input = document.getElementById('roundPts2');
+      if (p1Input) p1Input.value = '';
+      if (p2Input) p2Input.value = '';
+      updateScoresView();
+      showToast('🔄 تم تصفير النشرة وبدء لعبة جديدة');
+    }
+
+    function updateScoresView() {
+      const t1 = gameRounds.length > 0 ? gameRounds[gameRounds.length - 1].t1 : 0;
+      const t2 = gameRounds.length > 0 ? gameRounds[gameRounds.length - 1].t2 : 0;
+
+      const score1El = document.getElementById('scoreTeam1');
+      const score2El = document.getElementById('scoreTeam2');
+      if (score1El) score1El.innerText = t1;
+      if (score2El) score2El.innerText = t2;
+
+      const name1 = (document.getElementById('gameTeam1Name')?.value || 'الفريق الأول').trim();
+      const name2 = (document.getElementById('gameTeam2Name')?.value || 'الفريق الثاني').trim();
+
+      const roundNumEl = document.getElementById('currentRoundNumberLabel');
+      if (roundNumEl) roundNumEl.innerText = (gameRounds.length + 1).toString();
+
+      // Calculate Difference Automatically
+      const diff = Math.abs(t1 - t2);
+      const banner = document.getElementById('scoreDiffBanner');
+      if (banner) {
+        if (t1 > t2) {
+          banner.style.background = 'rgba(247, 160, 56, 0.15)';
+          banner.style.borderColor = 'var(--accent)';
+          banner.style.color = 'var(--accent)';
+          banner.innerHTML = `🔥 فارق النقاط: <strong>+${diff}</strong> لصالح <strong>${name1}</strong>`;
+        } else if (t2 > t1) {
+          banner.style.background = 'rgba(59, 130, 246, 0.15)';
+          banner.style.borderColor = '#3B82F6';
+          banner.style.color = '#60A5FA';
+          banner.innerHTML = `🔥 فارق النقاط: <strong>+${diff}</strong> لصالح <strong>${name2}</strong>`;
+        } else {
+          banner.style.background = '#1B1512';
+          banner.style.borderColor = '#2B221C';
+          banner.style.color = '#A89B91';
+          banner.innerHTML = `⚖️ تعادل في النقاط (${t1} - ${t2})`;
+        }
+      }
+
+      // Render Saved Rounds Table directly underneath
+      const hist = document.getElementById('savedRoundsList');
+      if (hist) {
+        if (gameRounds.length === 0) {
+          hist.innerHTML = '<div style="text-align:center; color:var(--text-dim); padding:18px 10px; font-size:12px;">لا توجد جولات مسجلة بعد. اكتب النتيجة واضغط الجولة التالية.</div>';
+        } else {
+          let html = '';
+          gameRounds.forEach((r, idx) => {
+            html += `
+              <div style="display:flex; align-items:center; border-bottom:1px solid #231C17; padding:8px 6px; background:${idx % 2 === 0 ? '#15110E' : '#191410'};">
+                <div style="width:36px; font-size:10px; font-weight:800; color:var(--text-dim); text-align:center;">
+                  #${idx + 1}
+                </div>
+                <div style="flex:1; text-align:center; font-size:16px; font-weight:900; color:${r.d1 === 'X' ? '#EF4444' : 'var(--accent)'}; border-left:1px solid #231C17;">
+                  ${r.d1}
+                </div>
+                <div style="flex:1; text-align:center; font-size:16px; font-weight:900; color:${r.d2 === 'X' ? '#EF4444' : '#60A5FA'};">
+                  ${r.d2}
+                </div>
+              </div>
+            `;
+          });
+          hist.innerHTML = html;
+        }
+      }
+    }
+
+    // 13. Toast Notification Helper
+    let toastTimeout = null;
+    function showToast(msg) {
+      const t = document.getElementById('toastBox');
+      t.innerText = msg;
+      t.style.display = 'block';
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        t.style.display = 'none';
+      }, 1800);
+    }
+
+    // 14. Fullscreen & Mobile Browser Address Bar Auto-Collapse
+    function triggerMinimalChrome() {
+      try { window.scrollTo(0, 1); } catch (_) {}
+    }
+    window.addEventListener('load', () => {
+      setTimeout(triggerMinimalChrome, 120);
+      setTimeout(triggerMinimalChrome, 500);
+    });
+    window.addEventListener('orientationchange', () => {
+      setTimeout(triggerMinimalChrome, 150);
+    });
+    document.addEventListener('touchstart', function initScrollOnTouch() {
+      triggerMinimalChrome();
+    }, { once: true, passive: true });
+
+    function toggleFullScreen() {
+      const doc = window.document;
+      const docEl = doc.documentElement;
+      const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+      const exit = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+      const isFull = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+
+      if (!isFull) {
+        if (req) {
+          req.call(docEl).then(() => {
+            const ic = document.getElementById('floatingFullscreenIcon');
+            if (ic) ic.className = 'fa-solid fa-compress';
+          }).catch(() => triggerMinimalChrome());
+        } else {
+          triggerMinimalChrome();
+        }
+      } else {
+        if (exit) {
+          exit.call(doc).then(() => {
+            const ic = document.getElementById('floatingFullscreenIcon');
+            if (ic) ic.className = 'fa-solid fa-expand';
+          }).catch(() => {});
+        }
+      }
+    }
+
+    // Run On Load
+    window.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>

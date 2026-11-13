@@ -1,0 +1,88 @@
+package com.example.data.model
+
+data class UserAccount(
+    val id: String,
+    val fullName: String,
+    val email: String,
+    val cafeName: String,
+    val role: String = "owner" // owner, cashier
+)
+
+data class MenuCategory(
+    val id: String,
+    val nameAr: String,
+    val nameEn: String,
+    val iconType: String, // burger, fries, drink, cafe, meals, sweets, pizza, shisha, billiards, gaming, cards, grill, breakfast, seafood
+    val sortOrder: Int = 0,
+    val customImageUri: String? = null
+)
+
+data class MenuItem(
+    val id: String,
+    val categoryId: String,
+    val nameAr: String,
+    val nameEn: String,
+    val descriptionAr: String,
+    val descriptionEn: String,
+    val price: Double,
+    val currency: String = "د.ع", // "د.ع" (دينار عراقي - افتراضي) أو "$" (دولار)
+    val imageType: String = "burger", // burger, drink, fries, sweets, default
+    val isAvailable: Boolean = true,
+    val imageUri: String? = null,
+    val bgImageUri: String? = null,
+    val galleryImages: List<String> = emptyList(), // صور متعددة إضافية للصنف
+    val isOffer: Boolean = false,
+    val offerDiscountPercent: Int = 0,
+    val offerTag: String = "عرض خاص"
+)
+
+data class CafeTable(
+    val id: String,
+    val tableNumber: Int,
+    val label: String,
+    val capacity: Int = 4,
+    val qrPayload: String,
+    val securityToken: String = "" // رمز أمان فريد يتجدد لمنع الطلب الاحتيالي
+)
+
+data class CartItem(
+    val menuItem: MenuItem,
+    val quantity: Int = 1,
+    val notes: String = ""
+)
+
+enum class OrderStatus(val titleAr: String, val titleEn: String) {
+    NEW("طلب جديد", "New"),
+    PREPARING("تحضير", "Preparing"),
+    DELIVERED("تسديد حساب الطاولة", "Pay Table"),
+    READY("تسديد حساب الطاولة", "Ready"),
+    PAID("الفواتير المسددة", "Paid"),
+    REJECTED("الطلبات المرفوضة", "Rejected"),
+    CANCELLED("ملغي", "Cancelled")
+}
+
+data class OrderRecord(
+    val id: String,
+    val tableNumber: Int,
+    val customerName: String,
+    val customerPhone: String = "",
+    val itemsSummary: String,
+    val itemsCount: Int,
+    val totalPrice: Double,
+    val subtotal: Double = 0.0,
+    val serviceFee: Double = 0.0,
+    val currency: String = "د.ع",
+    val status: OrderStatus,
+    val timestamp: Long,
+    val notes: String = ""
+)
+
+data class CafeNotificationItem(
+    val id: String,
+    val title: String,
+    val message: String,
+    val type: String, // DEBT_EXCEEDED, DEBT_WARNING, SYSTEM_SUSPENDED, NEW_ORDER, QR_RENEWED
+    val timestamp: Long,
+    val isUrgent: Boolean = false,
+    val isRead: Boolean = false
+)

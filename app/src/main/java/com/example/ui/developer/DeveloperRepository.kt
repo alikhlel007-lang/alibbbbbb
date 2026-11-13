@@ -1,0 +1,456 @@
+package com.example.ui.developer
+
+import com.example.util.InvoiceSecurity
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+
+class DeveloperRepository {
+
+    private val firestore: FirebaseFirestore?
+        get() = try {
+            FirebaseFirestore.getInstance()
+        } catch (_: Exception) {
+            null
+        }
+
+    private val auth: FirebaseAuth
+        get() = FirebaseAuth.getInstance()
+
+    private suspend fun <T> com.google.android.gms.tasks.Task<T>.awaitTask(): T =
+        suspendCancellableCoroutine { continuation ->
+            addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    continuation.resume(task.result)
+                } else {
+                    continuation.resumeWithException(task.exception ?: RuntimeException("Task failed"))
+                }
+            }
+        }
+
+    suspend fun fetchAllCafeterias(): List<CafeteriaAdminSummary> = withContext(Dispatchers.IO) {
+        val db = firestore ?: return@withContext emptyList()
+        val list = mutableListOf<CafeteriaAdminSummary>()
+
+        try {
+            val seenIds = mutableSetOf<String>()
+            val cafeSnap = db.collection("cafeterias").get().awaitTask()
+
+            for (doc in cafeSnap.documents) {
+                val id = doc.id
+                if (id.isBlank() || id == "u_default" || seenIds.contains(id)) continue
+                seenIds.add(id)
+
+                val storedNumId = doc.getString("numericId")
+                val numericId = if (!storedNumId.isNullOrBlank()) {
+                    storedNumId
+                } else {
+                    val generated = InvoiceSecurity.generateCafeNumericId(id)
+                    try {
+                        db.collection("cafeterias").document(id)
+                            .set(mapOf("numericId" to generated), SetOptions.merge())
+                    } catch (_: Exception) {}
+                    generated
+                }
+
+                val cafeName = doc.getString("cafeName") ?: doc.getString("name") ?: "كافتيريا $numericId"
+                val ownerName = doc.getString("ownerName") ?: doc.getString("fullName") ?: "غير محدد"
+                val phone = doc.getString("phone") ?: ""
+                val email = doc.getString("email") ?: ""
+                val address = doc.getString("address") ?: ""
+                val rawIsActive = doc.getBoolean("isActive") ?: true
+                val maxDebtLimit = doc.getDouble("maxDebtLimit")
+                    ?: (doc.getLong("maxDebtLimit")?.toDouble())
+                    ?: 50000.0
+                val storedReason = doc.getString("suspensionReason") ?: ""
+                val createdAt = doc.getLong("createdAt") ?: 0L
+
+                val isApproved = doc.getBoolean("isApproved")
+                    ?: (doc.getString("registrationStatus") == "APPROVED")
+                    ?: rawIsActive
+                val isPendingApproval = doc.getBoolean("isPendingApproval")
+                    ?: (doc.getString("registrationStatus") == "PENDING_APPROVAL")
+                    ?: (!isApproved && storedReason.contains("بانتظار"))
+                val isUnimportant = doc.getBoolean("isUnimportant")
+                    ?: doc.getBoolean("isArchived")
+                    ?: false
+                val regStatus = doc.getString("registrationStatus")
+                    ?: if (isPendingApproval) "PENDING_APPROVAL" else "APPROVED"
+
+                // Read aggregated totals directly from cafeteria document (saves thousands of Firestore reads)
+                var totalSales = doc.getDouble("totalSales")
+                    ?: (doc.getLong("totalSales")?.toDouble())
+                    ?: 0.0
+                var paidCount = doc.getLong("paidOrdersCount")?.toInt() ?: 0
+                var currency = "د.ع"
+
+                // Fallback: only if totalSales is not yet recorded on the cafeteria doc, calculate once and cache
+                if (totalSales == 0.0 && paidCount == 0) {
+                    try {
+                        val ordersSnap = db.collection("cafeterias").document(id).collection("orders")
+                            .limit(100)
+                            .get().awaitTask()
+                        for (orderDoc in ordersSnap.documents) {
+                            val status = orderDoc.getString("status") ?: ""
+                            if (status.equals("PAID", ignoreCase = true) || status == "الفواتير المسددة") {
+                                paidCount++
+                                val total = orderDoc.getDouble("totalPrice")
+                                    ?: (orderDoc.getLong("totalPrice")?.toDouble())
+                                    ?: (orderDoc.getString("totalPrice")?.toDoubleOrNull())
+                                    ?: orderDoc.getDouble("subtotal")
+                                    ?: 0.0
+                                totalSales += total
+                                orderDoc.getString("currency")?.let { if (it.isNotBlank()) currency = it }
+                            }
+                        }
+                        if (totalSales > 0.0) {
+                            try {
+                                db.collection("cafeterias").document(id).set(
+                                    mapOf("totalSales" to totalSales, "paidOrdersCount" to paidCount),
+                                    SetOptions.merge()
+                                )
+                            } catch (_: Exception) {}
+                        }
+                    } catch (_: Exception) {}
+                }
+
+                // Fetch fee collections
+                var collectedFees = 0.0
+                val docCollected = doc.getDouble("collectedFeesTotal")
+                    ?: (doc.getLong("collectedFeesTotal")?.toDouble())
+                    ?: 0.0
+                collectedFees = docCollected
+
+                try {
+                    val collectionsSnap = db.collection("cafeterias").document(id).collection("fee_collections").get().awaitTask()
+                    var subColl = 0.0
+                    for (colDoc in collectionsSnap.documents) {
+                        val amt = colDoc.getDouble("amount")
+                            ?: (colDoc.getLong("amount")?.toDouble())
+                            ?: (colDoc.getString("amount")?.toDoubleOrNull())
+                            ?: 0.0
+                        subColl += amt
+                    }
+                    collectedFees = maxOf(collectedFees, subColl)
+                } catch (_: Exception) {}
+
+                val serviceFeeTotal = totalSales * 0.01
+                val remainingFee = (serviceFeeTotal - collectedFees).coerceAtLeast(0.0)
+
+                // Automatic Suspension logic: If remaining unpaid fee exceeds maxDebtLimit
+                val isOverLimit = (maxDebtLimit > 0.0 && remainingFee >= maxDebtLimit)
+                val finalIsActive = if (isOverLimit || isPendingApproval) false else rawIsActive
+                val reason = if (isPendingApproval) {
+                    storedReason.ifBlank { "الحساب جديد وبانتظار الموافقة والتفعيل من إدارة النظام" }
+                } else if (isOverLimit) {
+                    "تجاوز حد الديون المسموح به (${maxDebtLimit.toLong()} $currency)"
+                } else if (!finalIsActive) {
+                    storedReason.ifBlank { "إيقاف يدوي من قِبل المطور" }
+                } else ""
+
+                // If automatically suspended, sync isActive = false to Firestore
+                if (isOverLimit && rawIsActive && !isPendingApproval) {
+                    try {
+                        db.collection("cafeterias").document(id).set(
+                            mapOf(
+                                "isActive" to false,
+                                "isAutoSuspended" to true,
+                                "suspensionReason" to reason
+                            ),
+                            SetOptions.merge()
+                        )
+                    } catch (_: Exception) {}
+                }
+
+                list.add(
+                    CafeteriaAdminSummary(
+                        id = id,
+                        numericId = numericId,
+                        cafeName = cafeName,
+                        ownerName = ownerName,
+                        phone = phone,
+                        email = email,
+                        address = address,
+                        isActive = finalIsActive,
+                        isApproved = isApproved,
+                        isPendingApproval = isPendingApproval,
+                        isUnimportant = isUnimportant,
+                        registrationStatus = regStatus,
+                        createdAt = createdAt,
+                        totalSales = totalSales,
+                        paidOrdersCount = paidCount,
+                        serviceFeeTotal = serviceFeeTotal,
+                        collectedFees = collectedFees,
+                        remainingFee = remainingFee,
+                        maxDebtLimit = maxDebtLimit,
+                        isAutoSuspended = isOverLimit,
+                        suspensionReason = reason,
+                        currency = currency
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        list.sortedByDescending { it.totalSales }
+    }
+
+    suspend fun fetchCafeInvoices(cafeId: String): List<AdminInvoiceItem> = withContext(Dispatchers.IO) {
+        val db = firestore ?: return@withContext emptyList()
+        val list = mutableListOf<AdminInvoiceItem>()
+
+        try {
+            val snap = db.collection("cafeterias").document(cafeId).collection("orders").get().awaitTask()
+            for (doc in snap.documents) {
+                val id = doc.id
+                val tableNumber = doc.getLong("tableNumber")?.toInt()
+                    ?: doc.getString("tableNumber")?.toIntOrNull()
+                    ?: 1
+                val customerName = doc.getString("customerName") ?: "طاولة $tableNumber"
+                val itemsSummary = doc.getString("itemsSummary") ?: ""
+                val itemsCount = doc.getLong("itemsCount")?.toInt() ?: 1
+                val totalPrice = doc.getDouble("totalPrice")
+                    ?: (doc.getLong("totalPrice")?.toDouble())
+                    ?: 0.0
+                val subtotal = doc.getDouble("subtotal")
+                    ?: (doc.getLong("subtotal")?.toDouble())
+                    ?: totalPrice
+                val serviceFee = doc.getDouble("serviceFee")
+                    ?: (doc.getLong("serviceFee")?.toDouble())
+                    ?: 0.0
+                val currency = doc.getString("currency") ?: "د.ع"
+                val status = doc.getString("status") ?: "PAID"
+                val timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis()
+                val notes = doc.getString("notes") ?: ""
+                val code = InvoiceSecurity.generateInvoiceCode(id)
+
+                list.add(
+                    AdminInvoiceItem(
+                        id = id,
+                        invoiceCode = code,
+                        tableNumber = tableNumber,
+                        customerName = customerName,
+                        itemsSummary = itemsSummary,
+                        itemsCount = itemsCount,
+                        totalPrice = totalPrice,
+                        subtotal = subtotal,
+                        serviceFee = serviceFee,
+                        currency = currency,
+                        status = status,
+                        timestamp = timestamp,
+                        notes = notes
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        list.sortedByDescending { it.timestamp }
+    }
+
+    suspend fun deleteInvoice(cafeId: String, orderId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val db = firestore ?: return@withContext Result.failure(Exception("قاعدة البيانات غير متصلة"))
+        try {
+            db.collection("cafeterias").document(cafeId).collection("orders").document(orderId).delete().awaitTask()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteAllInvoicesForCafe(cafeId: String): Result<Int> = withContext(Dispatchers.IO) {
+        val db = firestore ?: return@withContext Result.failure(Exception("قاعدة البيانات غير متصلة"))
+        try {
+            val snap = db.collection("cafeterias").document(cafeId).collection("orders").get().awaitTask()
+            var count = 0
+            for (doc in snap.documents) {
+                doc.reference.delete().awaitTask()
+                count++
+            }
+            Result.success(count)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun toggleCafeStatus(cafeId: String, currentActive: Boolean): Result<Boolean> = withContext(Dispatchers.IO) {
+        val db = firestore ?: return@withContext Result.failure(Exception("قاعدة البيانات غير متصلة"))
+        val newStatus = !currentActive
+        try {
+            val map = hashMapOf<String, Any>(
+                "isActive" to newStatus,
+                "isAutoSuspended" to false,
+                "suspensionReason" to if (!newStatus) "إيقاف يدوي من قِبل المطور المشرف" else "",
+                "statusUpdatedAt" to System.currentTimeMillis()
+            )
+            db.collection("cafeterias").document(cafeId)
+                .set(map, SetOptions.merge())
+                .awaitTask()
+            Result.success(newStatus)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateDebtLimit(cafeId: String, newLimit: Double): Result<Unit> = withContext(Dispatchers.IO) {
+        val db = firestore ?: return@withContext Result.failure(Exception("قاعدة البيانات غير متصلة"))
+        try {
+            val map = hashMapOf<String, Any>(
+                "maxDebtLimit" to newLimit,
+                "limitUpdatedAt" to System.currentTimeMillis()
+            )
+            db.collection("cafeterias").document(cafeId)
+                .set(map, SetOptions.merge())
+                .awaitTask()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun recordFeeCollection(cafeId: String, amount: Double, note: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val db = firestore ?: return@withContext Result.failure(Exception("قاعدة البيانات غير متصلة"))
+        try {
+            val record = hashMapOf<String, Any>(
+                "amount" to amount,
+                "note" to note.trim(),
+                "timestamp" to System.currentTimeMillis()
+            )
+            db.collection("cafeterias").document(cafeId).collection("fee_collections").add(record).awaitTask()
+
+            // After fee collection, update total collected fees on cafeteria document, reset auto-suspension flag and reactivate
+            try {
+                val cafeDoc = db.collection("cafeterias").document(cafeId).get().awaitTask()
+                val prevCollected = cafeDoc.getDouble("collectedFeesTotal")
+                    ?: (cafeDoc.getLong("collectedFeesTotal")?.toDouble())
+                    ?: 0.0
+                val newCollected = prevCollected + amount
+                db.collection("cafeterias").document(cafeId).set(
+                    mapOf(
+                        "collectedFeesTotal" to newCollected,
+                        "lastFeeCollectedAt" to System.currentTimeMillis(),
+                        "isAutoSuspended" to false,
+                        "isActive" to true,
+                        "suspensionReason" to ""
+                    ),
+                    SetOptions.merge()
+                ).awaitTask()
+            } catch (_: Exception) {}
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun approveCafeteria(cafeId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val db = firestore ?: return@withContext Result.failure(Exception("قاعدة البيانات غير متصلة"))
+        try {
+            val map = hashMapOf<String, Any>(
+                "isActive" to true,
+                "isApproved" to true,
+                "isPendingApproval" to false,
+                "registrationStatus" to "APPROVED",
+                "suspensionReason" to "",
+                "approvedAt" to System.currentTimeMillis()
+            )
+            db.collection("cafeterias").document(cafeId).set(map, SetOptions.merge()).awaitTask()
+            try {
+                db.collection("users").document(cafeId).set(map, SetOptions.merge()).awaitTask()
+            } catch (_: Exception) {}
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun setCafeteriaUnimportant(cafeId: String, unimportant: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val db = firestore ?: return@withContext Result.failure(Exception("قاعدة البيانات غير متصلة"))
+        try {
+            val map = hashMapOf<String, Any>(
+                "isUnimportant" to unimportant,
+                "isArchived" to unimportant,
+                "unimportantUpdatedAt" to System.currentTimeMillis()
+            )
+            db.collection("cafeterias").document(cafeId).set(map, SetOptions.merge()).awaitTask()
+            try {
+                db.collection("users").document(cafeId).set(map, SetOptions.merge()).awaitTask()
+            } catch (_: Exception) {}
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteCafeteriaPermanently(cafeId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val db = firestore ?: return@withContext Result.failure(Exception("قاعدة البيانات غير متصلة"))
+        try {
+            // 1. Delete all orders
+            try {
+                val ordersSnap = db.collection("cafeterias").document(cafeId).collection("orders").get().awaitTask()
+                for (doc in ordersSnap.documents) {
+                    doc.reference.delete().awaitTask()
+                }
+            } catch (_: Exception) {}
+
+            // 2. Delete all fee_collections
+            try {
+                val feesSnap = db.collection("cafeterias").document(cafeId).collection("fee_collections").get().awaitTask()
+                for (doc in feesSnap.documents) {
+                    doc.reference.delete().awaitTask()
+                }
+            } catch (_: Exception) {}
+
+            // 3. Delete all menu_items
+            try {
+                val menuSnap = db.collection("cafeterias").document(cafeId).collection("menu_items").get().awaitTask()
+                for (doc in menuSnap.documents) {
+                    doc.reference.delete().awaitTask()
+                }
+            } catch (_: Exception) {}
+
+            // 4. Delete cafeteria main document
+            db.collection("cafeterias").document(cafeId).delete().awaitTask()
+
+            // 5. Delete user profile document
+            try {
+                db.collection("users").document(cafeId).delete().awaitTask()
+            } catch (_: Exception) {}
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun fetchFeeCollections(cafeId: String): List<AdminFeeCollectionRecord> = withContext(Dispatchers.IO) {
+        val db = firestore ?: return@withContext emptyList()
+        val list = mutableListOf<AdminFeeCollectionRecord>()
+        try {
+            val snap = db.collection("cafeterias").document(cafeId).collection("fee_collections").get().awaitTask()
+            for (doc in snap.documents) {
+                val amount = doc.getDouble("amount")
+                    ?: (doc.getLong("amount")?.toDouble())
+                    ?: 0.0
+                val note = doc.getString("note") ?: ""
+                val timestamp = doc.getLong("timestamp") ?: 0L
+                list.add(
+                    AdminFeeCollectionRecord(
+                        id = doc.id,
+                        amount = amount,
+                        note = note,
+                        timestamp = timestamp
+                    )
+                )
+            }
+        } catch (_: Exception) {}
+        list.sortedByDescending { it.timestamp }
+    }
+}

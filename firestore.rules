@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Multi-tenant cafeteria collections
+    match /cafeterias/{cafeteriaId} {
+      allow read, write: if true;
+
+      match /categories/{categoryId} {
+        allow read, write: if true;
+      }
+
+      match /menu_items/{itemId} {
+        allow read, write: if true;
+      }
+
+      match /orders/{orderId} {
+        allow read, write: if true;
+      }
+
+      match /fee_collections/{feeId} {
+        allow read, write: if true;
+      }
+
+      match /tables/{tableId} {
+        allow read, write: if true;
+      }
+
+      match /service_calls/{callId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Root collections for compatibility
+    match /categories/{categoryId} {
+      allow read, write: if true;
+    }
+
+    match /menu_items/{itemId} {
+      allow read, write: if true;
+    }
+
+    match /orders/{orderId} {
+      allow read, write: if true;
+    }
+
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
